@@ -1,4 +1,4 @@
-module Primes where
+module Tools.Primes where
 
 import Data.List (groupBy)
 
