@@ -1,4 +1,7 @@
 import Tools.Utils (isInt)
+import Tools.Primes (coprimes, factorization)
+import Data.List (sort, groupBy, genericLength, delete)
+import Data.Maybe (mapMaybe)
 
 radius a b c = (a * b * c) / (4 * area a b c)
 
@@ -13,20 +16,21 @@ isRadiusInt (a,b,c) = isInt $ radius a b c
 sides (_,_,a,b,c) = (a,b,c)
 
 triCurry f = \(a,b,c) -> f a b c
-triUncurry f = \a -> (\b-> (\c->f (a,b,c)))
+triUncurry f = \a -> (\b-> (\c->(f (a,b,c))))
 
 --properUpToR :: (Integral a, RealFloat b) => a-> (a,a,a) -> [b]
 properUpToR r (a, b, c) = map toInteger $ filter isInt 
 			$ takeWhile (<= r) $
 				map (triCurry radius) $ generateHeronians a b c  
 
-sItem :: Integral a => a -> (a,a,a,a,a) -> a 
+--sItem :: Integral a => a -> (a,a,a,a,a) -> a 
 sItem r i = sum $ properUpToR r $ sides i
 
-s :: Integer -> Integer
+--s :: Integer -> Integer
 s r = sum $ map (sItem r) fundamentalHeronian
 
 -- area, perimeter, a, b, c
+fundamentalHeronian :: Integral a => [(a,a,a,a,a)]
 fundamentalHeronian = [
 		(6, 12, 5, 4, 3),
 		(12, 16, 6, 5, 5),
@@ -99,3 +103,60 @@ fundamentalHeronian = [
 		(396, 176, 87, 55, 34),
 		(396, 198, 97, 90, 11),
 		(396, 242, 120, 109, 13) ]
+
+
+generateTriangles n  = [ (a,b,c) | a <-[1..n], b <- [fromIntegral $ceiling ((fromIntegral(a+1))* 0.5) .. a], c<-[a+1-b .. b]]
+
+
+maybeRadius2 :: Integral a => (a,a,a) -> Maybe a
+maybeRadius2 (a, b, c) | isInt r = Just (floor r)
+		       | otherwise = Nothing
+			where r = radius a b c
+
+--funcS2 :: Integral t => t -> t
+funcS2 n = sum $ filter (<= n) $mapMaybe maybeRadius2 $ generateTriangles n
+
+generateHeronians2 n = filter (triCurry heronianTest) $ generateTriangles n
+
+testFactors a b c = [(a+b+c), (a+b-c), (a-b+c), (-a+b+c)]
+
+heronianTest a b c = (foldl sfpProd 1 $ testFactors a b c ) == 1
+
+sfpProd a b = x * y `div` (gcd x y) ^ 2 
+			where x = sfp a
+			      y = sfp b	
+
+sfp n = product $ map removeSquareFactors $ coprimes n  
+
+removeSquareFactors xs | (even $ length xs)  = 1
+		       | otherwise  = head xs
+
+sfps = map sfp [1..10000000]
+
+isSqrtable n = (sfps !! n) == 1
+
+getSquareFactors xs | (even $ length xs) =  (head xs)^(toInteger $floor (((genericLength xs)) * 0.5))
+		    | otherwise = 1
+intSqrt = product . intSqrtFactors
+intSqrtFactors xs = map getSquareFactors $ groupBy (==) $ sort $ concat $ map factorization xs
+
+ffact a b c = concat $ map factorization [a,b,c] 
+
+--ys shorter
+removeCommon xs [] rest = (xs, rest)
+removeCommon xs (y:ys) rest | y `elem` xs = removeCommon (delete y xs) ys rest
+                     	  | otherwise   = removeCommon xs ys (y:rest)
+
+maybeRadius (a, b, c) | denominatorLi  == [] = Just $ product enumeratorLi
+		  | otherwise = Nothing
+		where (enumeratorLi, denominatorLi) = removeCommon (ffact a b c) ([2,2] ++ (factorization $ area2 a b c)) []
+
+heronFactors a b c = [p, p - a, p - b, p - c] where p = (a+b+c) `div` 2
+
+
+area2 a b c = intSqrt $ heronFactors a b c
+
+funcS n = sum $ filter (<=n) $ mapMaybe (maybeRadius) $ generateHeronians2 n
+
+
+
