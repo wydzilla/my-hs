@@ -107,14 +107,17 @@ fundamentalHeronian = [
 
 generateTriangles n  = [ (a,b,c) | a <-[1..n], b <- [fromIntegral $ceiling ((fromIntegral(a+1))* 0.5) .. a], c<-[a+1-b .. b]]
 
+--generateTriangles n = [(a,b,c) | a <- [1..n] , b<- [1..n], c<-[1..n], (a + b) > c && (a +c) > b && (b+c)>a]
+radius3 (a,b,c) = radius (fromIntegral a::Double) (fromIntegral b::Double) (fromIntegral c::Double)
 
+isInt2 r = abs ((r::Double) - fromInteger(floor (r::Double))) < 0.00000001
 maybeRadius2 :: Integral a => (a,a,a) -> Maybe a
-maybeRadius2 (a, b, c) | isInt r = Just (floor r)
+maybeRadius2 (a, b, c) | isInt2 r = Just (floor r)
 		       | otherwise = Nothing
-			where r = radius a b c
+			where r = radius (fromIntegral a::Double) (fromIntegral b::Double) (fromIntegral c::Double)
 
---funcS2 :: Integral t => t -> t
-funcS2 n = sum $ filter (<= n) $mapMaybe maybeRadius2 $ generateTriangles n
+funcS2 :: Integral t => t -> t
+funcS2 n = sum $ filter (<= n) $mapMaybe maybeRadius2 $ generateTriangles (2*n)
 
 generateHeronians2 n = filter (triCurry heronianTest) $ generateTriangles n
 
